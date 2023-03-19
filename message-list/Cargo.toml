@@ -1,0 +1,18 @@
+[package]
+name = "message-list"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+example-messages = {path = "../example-messages"}
+example-handlers = {path = "../example-handlers"}
+context-proc-macros = {path = "../context-proc-macros"}
+message-structs = {path = "../message-structs"}
+handler-structs = {path = "../handler-structs"}
+context-impl = {path = "../context-impl"}
+proc-macro2 = "1.0.49"

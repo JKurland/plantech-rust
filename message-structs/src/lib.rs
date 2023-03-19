@@ -1,12 +1,12 @@
+#[derive(Debug)]
 pub struct MessageSpec {
-    pub response_type: &'static str,
     pub is_async: bool,
     pub name: &'static str,
+    pub has_response: bool,
 }
 
 pub trait Message {
     type Response;
 
-    fn name() -> &'static str;
-    fn is_async() -> bool;
+    fn get_message_spec() -> &'static MessageSpec;
 }
