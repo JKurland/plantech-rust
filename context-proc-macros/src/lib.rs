@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse::Parse, Token, punctuated::Punctuated, bracketed};
+use syn::{parse::Parse, Token};
 use proc_macro_helpers::List;
 
 // // defines the context! macro
@@ -33,32 +33,32 @@ mod kw {
 }
 
 struct Messages {
-    kw: kw::Messages,
-    sep: Token![:],
+    _kw: kw::Messages,
+    _sep: Token![:],
     types: List<syn::TypePath>
 }
 
 impl Parse for Messages {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            kw: input.parse()?,
-            sep: input.parse()?,
+            _kw: input.parse()?,
+            _sep: input.parse()?,
             types: input.parse()?
         })
     }
 }
 
 struct Handlers {
-    kw: kw::Handlers,
-    sep: Token![:],
+    _kw: kw::Handlers,
+    _sep: Token![:],
     types: List<syn::TypePath>
 }
 
 impl Parse for Handlers {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            kw: input.parse()?,
-            sep: input.parse()?,
+            _kw: input.parse()?,
+            _sep: input.parse()?,
             types: input.parse()?
         })
     }

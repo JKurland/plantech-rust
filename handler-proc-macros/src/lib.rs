@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use syn::{parse_macro_input, Generics, DeriveInput, Attribute, spanned::Spanned};
+use syn::{parse_macro_input, Generics, DeriveInput, Attribute};
 use quote::quote;
 use proc_macro_helpers::ParenList;
 
@@ -85,3 +85,11 @@ pub fn handler_macro(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     }
 }
 
+
+// The format of the Handler proc_macro is
+// #[derive(Handler)]
+// #[pt_handles(Add1, Times3)]
+// pub struct ArithmeticHandler {}
+
+// Here pt_handles tell the event system which messages this handler can handle. Add1 and Times3 are defined in example-messages/src/lib.rs
+// The information passed to the Handler proc_macro is used along with all the valid messages in the context to generate the HandlerSpec struct.
