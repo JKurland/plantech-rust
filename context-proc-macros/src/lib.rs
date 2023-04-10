@@ -3,27 +3,6 @@ use quote::quote;
 use syn::{parse::Parse, Token};
 use proc_macro_helpers::List;
 
-// // defines the context! macro
-// define_context!(
-//     Messages: [
-//         ...
-//     ]
-
-//     Handlers: [
-//         ...
-//     ]
-//
-//      .. other config maybe
-// )
-
-// expands to
-// #[proc_macro]
-// pub fn context(ts: proc_macro::TokenStream) -> proc_macro::TokenStream {
-//     let messages = [Messages...];
-//     let handlers = [Handlers...];
-
-//     context_impl(messages, handlers);
-// }
 
 mod kw {
     use syn::custom_keyword;
@@ -35,7 +14,7 @@ mod kw {
 struct Messages {
     _kw: kw::Messages,
     _sep: Token![:],
-    types: List<syn::TypePath>
+    value: syn::Expr,
 }
 
 impl Parse for Messages {
@@ -43,7 +22,7 @@ impl Parse for Messages {
         Ok(Self {
             _kw: input.parse()?,
             _sep: input.parse()?,
-            types: input.parse()?
+            value: input.parse()?
         })
     }
 }
@@ -86,41 +65,21 @@ impl Parse for DefineContextInput {
     }
 }
 
-// let context = context!(
-//     handler_expr1,
-//     handler_expr2,
-// )
-
-
-// expands to
-
-// let context = {
-//     define context type
-
-//     ContextType::new(
-//         handler_expr1,
-//         handler_expr2,
-//     )
-// }
 
 fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
-    let input: DefineContextInput = syn::parse2(ts)?;
+    let input: DefineContextInput = syn::parse2(ts.clone())?;
 
-    let message_paths = input.messages
-        .iter()
-        .map(|messages| &messages.types.values)
-        .flatten();
+    let messages_function = input.messages.ok_or(syn::Error::new_spanned(ts, "Expected 'Messages'"))?.value;
 
     let handler_paths = input.handlers
         .iter()
         .map(|handlers| &handlers.types.values)
         .flatten();
-    
-    let r = Ok(quote!(
+
+    Ok(quote!(
         #[proc_macro]
         pub fn context_type(ts: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
-            let messages = vec![#( <#message_paths as ::message_structs::Message>::get_message_spec() ),* ];
-
+            let messages = #messages_function();
             let handlers = vec![#( <#handler_paths as ::handler_structs::Handler>::get_handler_spec(&messages) ),* ];
 
             match context_impl::context_impl(messages, handlers) {
@@ -128,9 +87,21 @@ fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
                 Err(err) => err.to_compile_error()
             }.into()
         }
-    ));
+    ))
+}
 
-    r
+fn try_message_list(ts: TokenStream) -> syn::Result<TokenStream> {
+    let input: List<syn::TypePath> = syn::parse2(ts)?;
+
+    let message_paths: Vec<_> = input.values.iter().collect();
+
+    Ok(quote!(
+        pub fn messages() -> Vec<&'static ::message_structs::MessageSpec> {
+            vec![#( <#message_paths as ::message_structs::Message>::get_message_spec() ),* ]
+        }
+
+        pub trait C: #( ::context_structs::Handle<#message_paths> + )* {}
+    ))
 }
 
 #[proc_macro]
@@ -140,3 +111,17 @@ pub fn define_context_type(ts: proc_macro::TokenStream) -> proc_macro::TokenStre
         Err(err) => err.to_compile_error()
     }.into()
 }
+
+
+
+#[proc_macro]
+pub fn message_list(ts: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    match try_message_list(TokenStream::from(ts)) {
+        Ok(ts) => ts,
+        Err(err) => err.to_compile_error()
+    }.into()
+}
+
+// To create a context object defined in this way you need to pass in the
+// instances of each handler to the context constructor. For example
+// Context::new(handler1, handler2, handler3, ...)

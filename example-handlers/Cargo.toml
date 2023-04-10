@@ -11,3 +11,4 @@ handler-proc-macros = {path = "../handler-proc-macros"}
 handler-structs = {path = "../handler-structs"}
 message-structs = {path = "../message-structs"}
 futures = "0.3.27"
+message-list = {path = "../message-list"}

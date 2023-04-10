@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 message-structs = {path = "../message-structs"}
+message-list = {path = "../message-list"}

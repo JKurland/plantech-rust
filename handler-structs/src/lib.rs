@@ -1,4 +1,5 @@
 use message_structs::{Message, MessageSpec};
+use message_list::C;
 
 #[derive(Debug)]
 pub struct HandlerSpec {
@@ -21,5 +22,5 @@ pub mod hidden {
 }
 
 pub trait Handle<T: Message>: hidden::DeclaredHandle<T> {
-    fn handle(&self, message: T) -> T::Response;
+    fn handle(&self, ctx: &impl C, message: T) -> T::Response;
 }

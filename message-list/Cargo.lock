@@ -9,17 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "context-impl"
-version = "0.1.0"
-dependencies = [
- "handler-structs",
- "message-structs",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "context-proc-macros"
 version = "0.1.0"
 dependencies = [
@@ -30,13 +19,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-handlers"
+name = "context-structs"
 version = "0.1.0"
 dependencies = [
- "example-messages",
- "futures",
- "handler-proc-macros",
- "handler-structs",
  "message-structs",
 ]
 
@@ -139,23 +124,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "handler-proc-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro-helpers",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "handler-structs"
-version = "0.1.0"
-dependencies = [
- "message-structs",
-]
-
-[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,13 +133,10 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 name = "message-list"
 version = "0.1.0"
 dependencies = [
- "context-impl",
  "context-proc-macros",
- "example-handlers",
+ "context-structs",
  "example-messages",
- "handler-structs",
  "message-structs",
- "proc-macro2",
 ]
 
 [[package]]

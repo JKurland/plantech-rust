@@ -1,0 +1,16 @@
+[package]
+name = "handler-list"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+context-proc-macros = {path = "../context-proc-macros"}
+message-list = {path = "../message-list"}
+handler-structs = {path = "../handler-structs"}
+context-impl = {path = "../context-impl"}
+example-handlers = {path = "../example-handlers"}

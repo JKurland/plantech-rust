@@ -12,3 +12,10 @@ pub struct Add1 {
 pub struct Times3 {
     pub x: i32
 }
+
+
+#[derive(Message)]
+#[pt_response(i32)]
+pub struct Add2 {
+    pub x: i32
+}

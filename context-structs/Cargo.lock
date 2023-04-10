@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "context_structs"
+name = "context-structs"
 version = "0.1.0"
 dependencies = [
  "message-structs",

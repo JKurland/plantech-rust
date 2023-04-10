@@ -1,14 +1,9 @@
-use context_proc_macros::define_context_type;
+use context_proc_macros::message_list;
 
 
-define_context_type!{
-    Messages: [
-        example_messages::Add1,
-        example_messages::Times3,
-    ]
-
-    Handlers: [
-        example_handlers::ArithmeticHandler,
-    ]
-}
+message_list!{[
+    example_messages::Add1,
+    example_messages::Add2,
+    example_messages::Times3,
+]}
 

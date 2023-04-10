@@ -9,5 +9,8 @@ edition = "2021"
 example-messages = {path = "../example-messages"}
 message-structs = {path = "../message-structs"}
 handler-structs = {path = "../handler-structs"}
-message-list = {path = "../message-list"}
+handler-list = {path = "../handler-list"}
 example-handlers = {path = "../example-handlers"}
+smol = "1.3.0"
+context-structs = {path = "../context-structs"}
+message-list = {path = "../message-list"}

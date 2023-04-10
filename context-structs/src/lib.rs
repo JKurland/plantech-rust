@@ -1,5 +1,5 @@
 use message_structs::Message;
 
-trait Handle<T: Message> {
-    fn handle(&mut self, message: &T) -> T::Response;
+pub trait Handle<T: Message> {
+    fn handle(&self, message: T) -> T::Response;
 }
