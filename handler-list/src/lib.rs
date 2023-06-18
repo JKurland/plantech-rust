@@ -3,7 +3,7 @@ use message_list::messages;
 
 define_context_type!{
     Messages: messages
-    Handlers: [
-        example_handlers::ArithmeticHandler,
-    ]
+    Handlers: {
+        arithmetic: example_handlers::ArithmeticHandler,
+    }
 }

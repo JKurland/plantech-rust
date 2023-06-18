@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use handler_structs::HandlerSpec;
 use message_structs::MessageSpec;
 use proc_macro2::{TokenStream, Ident, Span};
@@ -16,11 +18,11 @@ impl<'a> Handler<'a> {
         self.spec.handled_messages.iter().any(|spec| &spec.name == &message_spec.name)
     }
 
-    fn from_handler_spec(handler_spec: &'a HandlerSpec, i: usize) -> Self {
+    fn from_handler_spec(handler_spec: &'a HandlerSpec, name: &str) -> Self {
         // member name is handler_i
         // get_member_expr is self.handler_i
         // type name comes from handler_spec.name
-        let member_name = Ident::new(&format!("handler_{}", i), Span::call_site());
+        let member_name = Ident::new(name, Span::call_site());
         let get_member_expr = parse_str(&format!("self.{}", member_name)).unwrap();
         let type_name: TypePath = parse_str(&handler_spec.name).unwrap();
 
@@ -75,11 +77,25 @@ fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Re
     ))
 }
 
-pub fn context_impl(message_specs: Vec<&'static MessageSpec>, handler_specs: Vec<HandlerSpec>) -> syn::Result<TokenStream> {
+fn make_context_config(handlers: &[Handler]) -> TokenStream {
+    let (handler_types_with_config, handler_member_names_with_config): (Vec<_>, Vec<_>) = handlers.iter()
+        .filter(|handler| handler.spec.has_init_config)
+        .map(|handler| {
+            (&handler.type_name, &handler.member_name)
+        })
+        .unzip();
+
+    quote!(
+        pub struct ContextConfig {
+            #(pub #handler_member_names_with_config: <#handler_types_with_config as ::handler_structs::Handler>::InitConfig),*
+        }
+    )
+}
+
+pub fn context_impl(message_specs: Vec<&'static MessageSpec>, handler_specs: HashMap<&'static str, HandlerSpec>) -> syn::Result<TokenStream> {
     // make a vec of Handlers
     let handlers = handler_specs.iter()
-        .enumerate()
-        .map(|(i, spec)| Handler::from_handler_spec(spec, i))
+        .map(|(name, spec)| Handler::from_handler_spec(spec, name))
         .collect::<Vec<_>>();
 
     let handle_impls = message_specs.iter()
@@ -95,10 +111,13 @@ pub fn context_impl(message_specs: Vec<&'static MessageSpec>, handler_specs: Vec
         })
         .unwrap_or(Ok(quote!()))?;
 
+    let context_config = make_context_config(&handlers);
 
     let handler_names = handlers.iter().map(|h| &h.member_name).collect::<Vec<_>>();
     let handler_type_names = handlers.iter().map(|h| &h.type_name).collect::<Vec<_>>();
     Ok(quote!(
+        #context_config
+
         struct Context {
             #( #handler_names: #handler_type_names ),*
         }

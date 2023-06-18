@@ -4,9 +4,13 @@ use handler_proc_macros::Handler;
 use handler_structs::Handle;
 use message_list::C;
 
+pub struct Config {
+    pub hello: bool,
+}
 
 #[derive(Handler)]
 #[pt_handles(Add1, Times3, Add2)]
+#[pt_config(Config)]
 pub struct ArithmeticHandler {}
 
 

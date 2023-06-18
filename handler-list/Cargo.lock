@@ -40,6 +40,7 @@ dependencies = [
 name = "example-handlers"
 version = "0.1.0"
 dependencies = [
+ "context-structs",
  "example-messages",
  "futures",
  "handler-proc-macros",
@@ -220,6 +221,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 name = "proc-macro-helpers"
 version = "0.1.0"
 dependencies = [
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -234,9 +236,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.26"
+version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4424af4bf778aae2051a77b60283332f386554255d722233d09fbfc7e30da2fc"
+checksum = "1b9ab9c7eadfd8df19006f1cf1a4aed13540ed5cbc047010ece5826e10825488"
 dependencies = [
  "proc-macro2",
 ]

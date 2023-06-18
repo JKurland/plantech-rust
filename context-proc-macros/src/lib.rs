@@ -1,7 +1,7 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{TokenStream, Ident};
 use quote::quote;
 use syn::{parse::Parse, Token};
-use proc_macro_helpers::List;
+use proc_macro_helpers::{List, Dict};
 
 
 mod kw {
@@ -30,7 +30,7 @@ impl Parse for Messages {
 struct Handlers {
     _kw: kw::Handlers,
     _sep: Token![:],
-    types: List<syn::TypePath>
+    named_handlers: Dict<Ident, syn::TypePath>
 }
 
 impl Parse for Handlers {
@@ -38,7 +38,7 @@ impl Parse for Handlers {
         Ok(Self {
             _kw: input.parse()?,
             _sep: input.parse()?,
-            types: input.parse()?
+            named_handlers: input.parse()?
         })
     }
 }
@@ -71,16 +71,24 @@ fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
 
     let messages_function = input.messages.ok_or(syn::Error::new_spanned(ts, "Expected 'Messages'"))?.value;
 
-    let handler_paths = input.handlers
+    let insert_handler_snippets = input.handlers
         .iter()
-        .map(|handlers| &handlers.types.values)
-        .flatten();
+        .map(|handlers| &handlers.named_handlers.items)
+        .flatten()
+        .map(|pair| {
+            let key = &pair.first;
+            let value = &pair.second;
+            quote!(
+                handlers.insert(stringify!(#key), <#value as ::handler_structs::Handler>::get_handler_spec(&messages));
+            )
+        });
 
     Ok(quote!(
         #[proc_macro]
         pub fn context_type(ts: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
             let messages = #messages_function();
-            let handlers = vec![#( <#handler_paths as ::handler_structs::Handler>::get_handler_spec(&messages) ),* ];
+            let mut handlers = ::std::collections::HashMap::new();
+            #( #insert_handler_snippets )*
 
             match context_impl::context_impl(messages, handlers) {
                 Ok(ts) => ts,
