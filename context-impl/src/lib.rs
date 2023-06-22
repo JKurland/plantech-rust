@@ -85,13 +85,13 @@ fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Re
     let handle_body_with_unwrap = make_handle_impl_body(message_spec, &handlers, true)?;
 
     Ok(quote!(
-        impl ::context_structs::Handle<#message_name> for Context {
+        impl ::context_structs::CtxHandle<#message_name> for Context {
             fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
                 #handle_body
             }
         }
 
-        impl ::context_structs::Handle<#message_name> for PartialContext {
+        impl ::context_structs::CtxHandle<#message_name> for PartialContext {
             fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
                 #handle_body_with_unwrap
             }

@@ -3,7 +3,7 @@ use futures::FutureExt;
 use handler_proc_macros::Handler;
 use handler_structs::{Handle, HandlerInit};
 use message_list::C;
-use context_structs::Handle as H;
+use context_structs::CtxHandle;
 
 
 #[derive(Handler)]

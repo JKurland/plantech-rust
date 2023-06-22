@@ -1,6 +1,6 @@
 use example_handlers::Config;
 use handler_list::context_type;
-use context_structs::Handle;
+use context_structs::CtxHandle;
 
 context_type!();
 

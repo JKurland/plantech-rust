@@ -108,7 +108,7 @@ fn try_message_list(ts: TokenStream) -> syn::Result<TokenStream> {
             vec![#( <#message_paths as ::message_structs::Message>::get_message_spec() ),* ]
         }
 
-        pub trait C: #( ::context_structs::Handle<#message_paths> + )* {}
+        pub trait C: #( ::context_structs::CtxHandle<#message_paths> + )* {}
     ))
 }
 
