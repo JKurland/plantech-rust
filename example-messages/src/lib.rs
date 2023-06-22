@@ -19,3 +19,7 @@ pub struct Times3 {
 pub struct Add2 {
     pub x: i32
 }
+
+#[derive(Message)]
+#[pt_response(i32)]
+pub struct GetExampleInitValue {}

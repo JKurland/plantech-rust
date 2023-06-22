@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{TokenStream, Span, Ident};
 use syn::{parse_macro_input, Generics, DeriveInput, Attribute};
 use quote::quote;
 use proc_macro_helpers::{ParenList, ParenValue};
@@ -25,7 +25,7 @@ fn get_handled_messages(attrs: &[Attribute]) -> Option<syn::Result<ParenList<syn
 // pt_init specifies a list of requests that must be supported during init of this handler. Sending
 // other types of messages (e.g. events) is not supported during handler init.
 fn get_init_requests(attrs: &[Attribute]) -> Option<syn::Result<ParenList<syn::Type>>> {
-    get_attribute(attrs, "pt_init_requests").map(|attr| {
+    get_attribute(attrs, "pt_init").map(|attr| {
         let init: ParenList::<syn::Type> = syn::parse2(attr.tokens.clone())?;
         Ok(init)
     })
@@ -81,9 +81,46 @@ fn try_handler_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
         quote!(type InitConfig = ();)
     };
 
+    let impl_init_ctx_struct_snippet = if init_requests.len() > 0 {
+        quote!(
+            pub struct InitCtx<'a, Ctx> where Ctx: C, Ctx: 'a {
+                pub ctx: &'a Ctx,
+            }
+    
+            // implement Handle for each init request
+            #(
+                impl<'a, Ctx> ::context_structs::Handle<#init_requests> for InitCtx<'a, Ctx> where Ctx: C, Ctx: 'a {
+                    fn handle(&self, message: #init_requests) -> <#init_requests as ::message_structs::Message>::Response {
+                        self.ctx.handle(message)
+                    }
+                }
+            )*
+        )
+    } else {
+        quote!()
+    };
+
+    let hidden_mod = Ident::new(&format!("_pt_{}", ident), Span::call_site());
+
+    let init_ctx_struct_snippet = if init_requests.len() > 0 {
+        quote!(
+            type InitCtx<'a, Ctx> = #hidden_mod::InitCtx<'a, Ctx> where Self: 'a, Ctx: C, Ctx: 'a;
+        )
+    } else {
+        quote!(
+            type InitCtx<'a, Ctx> = () where Self: 'a, Ctx: C, Ctx: 'a;
+        )
+    };
+
+
     Ok(quote!(
+        mod #hidden_mod {
+            use super::*;
+            #impl_init_ctx_struct_snippet
+        }
         impl ::handler_structs::Handler for #ident {
             #init_config_type_snippet
+            #init_ctx_struct_snippet
 
             fn get_handler_spec(messages_in_context: &[&'static ::message_structs::MessageSpec]) -> ::handler_structs::HandlerSpec {
                 let handled_messages: &[& 'static ::message_structs::MessageSpec] = &[#(<#handled_messages as ::message_structs::Message>::get_message_spec()),*];
@@ -102,6 +139,7 @@ fn try_handler_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
                     handled_messages: handled_messages_in_context.collect(),
                     init_requests: init_requests_in_context.collect(),
                     has_init_config: #has_init_config,
+                    span: proc_macro2::Span::call_site(),
                 }
             }
         }

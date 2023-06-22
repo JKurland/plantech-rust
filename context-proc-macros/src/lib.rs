@@ -79,7 +79,7 @@ fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
             let key = &pair.first;
             let value = &pair.second;
             quote!(
-                handlers.insert(stringify!(#key), <#value as ::handler_structs::Handler>::get_handler_spec(&messages));
+                handlers.push((stringify!(#key), <#value as ::handler_structs::Handler>::get_handler_spec(&messages)));
             )
         });
 
@@ -87,7 +87,7 @@ fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
         #[proc_macro]
         pub fn context_type(ts: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
             let messages = #messages_function();
-            let mut handlers = ::std::collections::HashMap::new();
+            let mut handlers = ::std::vec::Vec::new();
             #( #insert_handler_snippets )*
 
             match context_impl::context_impl(messages, handlers) {

@@ -47,6 +47,7 @@ dependencies = [
  "handler-structs",
  "message-list",
  "message-structs",
+ "proc-macro2",
 ]
 
 [[package]]
@@ -174,6 +175,7 @@ version = "0.1.0"
 dependencies = [
  "message-list",
  "message-structs",
+ "proc-macro2",
 ]
 
 [[package]]

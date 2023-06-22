@@ -129,6 +129,7 @@ version = "0.1.0"
 dependencies = [
  "message-list",
  "message-structs",
+ "proc-macro2",
 ]
 
 [[package]]

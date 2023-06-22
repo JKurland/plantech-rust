@@ -1,8 +1,27 @@
-use example_messages::{Add1, Times3, Add2};
+use example_messages::{Add1, Times3, Add2, GetExampleInitValue};
 use futures::FutureExt;
 use handler_proc_macros::Handler;
-use handler_structs::Handle;
+use handler_structs::{Handle, HandlerInit};
 use message_list::C;
+use context_structs::Handle as H;
+
+
+#[derive(Handler)]
+#[pt_handles(GetExampleInitValue)]
+pub struct SomeInitHandler {}
+
+impl Handle<GetExampleInitValue> for SomeInitHandler {
+    fn handle(&self, _ctx: &impl C, _message: GetExampleInitValue) -> <GetExampleInitValue as message_structs::Message>::Response {
+        42
+    }
+}
+
+impl HandlerInit for SomeInitHandler {
+    fn init<'a, Ctx: C + 'a>(_ctx: &Self::InitCtx<'a, Ctx>, _config: Self::InitConfig) -> Self {
+        Self {}
+    }
+}
+
 
 pub struct Config {
     pub hello: bool,
@@ -11,7 +30,17 @@ pub struct Config {
 #[derive(Handler)]
 #[pt_handles(Add1, Times3, Add2)]
 #[pt_config(Config)]
+#[pt_init(GetExampleInitValue)]
 pub struct ArithmeticHandler {}
+
+
+impl HandlerInit for ArithmeticHandler {
+    fn init<'a, Ctx: C + 'a>(ctx: &Self::InitCtx<'a, Ctx>, config: Self::InitConfig) -> Self {
+        let init_val = ctx.handle(GetExampleInitValue{});
+        println!("ArithmeticHandler init, hello={} init_val={}", config.hello, init_val);
+        Self {}
+    }
+}
 
 
 impl Handle<Add1> for ArithmeticHandler {

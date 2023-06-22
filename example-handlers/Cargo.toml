@@ -13,3 +13,4 @@ message-structs = {path = "../message-structs"}
 futures = "0.3.27"
 message-list = {path = "../message-list"}
 context-structs = {path = "../context-structs"}
+proc-macro2 = "1.0.49"
