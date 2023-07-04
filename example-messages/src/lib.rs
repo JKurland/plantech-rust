@@ -25,3 +25,9 @@ pub struct Add2 {
 #[pt_response(i32)]
 #[pt_sync]
 pub struct GetExampleInitValue {}
+
+
+#[derive(Message)]
+pub struct NoResponse {
+    pub x: i32
+}

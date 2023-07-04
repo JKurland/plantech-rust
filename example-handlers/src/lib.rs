@@ -1,4 +1,6 @@
-use example_messages::{Add1, Times3, Add2, GetExampleInitValue};
+use std::time::Duration;
+
+use example_messages::{Add1, Times3, Add2, GetExampleInitValue, NoResponse};
 use futures::FutureExt;
 use handler_proc_macros::Handler;
 use handler_structs::{Handle, HandlerInit};
@@ -28,7 +30,7 @@ pub struct Config {
 }
 
 #[derive(Handler)]
-#[pt_handles(Add1, Times3, Add2)]
+#[pt_handles(Add1, Times3, Add2, NoResponse)]
 #[pt_config(Config)]
 #[pt_init(GetExampleInitValue)]
 pub struct ArithmeticHandler {}
@@ -60,5 +62,14 @@ impl Handle<Add2> for ArithmeticHandler {
         let add1 = ctx.handle(Add1{ x: message.x });
         let add2 = ctx.handle(Add1{ x: add1 });
         add2
+    }
+}
+
+impl Handle<NoResponse> for ArithmeticHandler {
+    fn handle(&self, _ctx: &impl C, message: NoResponse) -> <NoResponse as message_structs::Message>::Response {
+        async move {
+            smol::Timer::after(Duration::from_secs(2)).await;
+            println!("NoResponse handler got message: {:?}", message.x);
+        }.boxed()
     }
 }

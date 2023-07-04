@@ -15,6 +15,7 @@ fn main() {
 
     let thread = thread::spawn(move || {
         println!("Hello, world! {}", proxy.handle(example_messages::Add2{ x: 1 }));
+        future::block_on(proxy.handle(example_messages::NoResponse{ x: 102 }));
         proxy.quit();
     });
 

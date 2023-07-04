@@ -53,7 +53,7 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
         (false, handlers) => {
             let handler_types = handlers.iter().map(|h| &h.type_name);
             let handler_exprs = handlers.iter().map(|h| get_member_expr(h));
-            quote!(#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message); )*)
+            quote!(#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message) )*)
         },
         (true, [handler]) => {
             let handler_type = &handler.type_name;
@@ -79,16 +79,10 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
 fn make_handle_impl_body_for_proxy(message_spec: &MessageSpec) -> TokenStream {
     let enum_name = any_message_enum_name(message_spec);
 
-    let make_any_message = if message_spec.has_response {
-        quote!(
-            let (sender, receiver) = ::oneshot::channel();
-            let any_message = AnyMessage::#enum_name(message, sender);
-        )
-    } else {
-        quote!(
-            let any_message = AnyMessage::#enum_name(message);
-        )
-    };
+    let make_any_message = quote!(
+        let (sender, receiver) = ::oneshot::channel();
+        let any_message = AnyMessage::#enum_name(message, sender);
+    );
 
     let send_snippet = if message_spec.is_async {
         quote!(self_sender.send(any_message).await.unwrap();)
@@ -96,14 +90,10 @@ fn make_handle_impl_body_for_proxy(message_spec: &MessageSpec) -> TokenStream {
         quote!(self.sender.try_send(any_message).unwrap();)
     };
 
-    let return_response = if message_spec.has_response {
-        if message_spec.is_async {
-            quote!(receiver.await.unwrap())
-        } else {
-            quote!(receiver.recv().unwrap())
-        }
+    let return_response = if message_spec.is_async {
+        quote!(receiver.await.unwrap())
     } else {
-        quote!()
+        quote!(receiver.recv().unwrap())
     };
 
     if message_spec.is_async {
@@ -182,7 +172,7 @@ fn make_any_message_enum(message_specs: &[&'static MessageSpec]) -> TokenStream 
         if spec.has_response {
             quote!(#message_type, ::oneshot::Sender<<#message_type as ::message_structs::Message>::UnwrappedResponse>)
         } else {
-            quote!(#message_type)
+            quote!(#message_type, ::oneshot::Sender<()>)
         }
     });
 
@@ -202,8 +192,9 @@ fn make_any_message_enum(message_specs: &[&'static MessageSpec]) -> TokenStream 
                 let _ = sender.send(response);
             })
         } else {
-            quote!(Self::#ident(message) => {
+            quote!(Self::#ident(message, sender) => {
                 #get_response_snippet;
+                let _ = sender.send(()); // ignore the error, it just means the receiver was dropped
             })
         }
     });

@@ -250,6 +250,7 @@ dependencies = [
  "message-list",
  "message-structs",
  "proc-macro2",
+ "smol",
 ]
 
 [[package]]

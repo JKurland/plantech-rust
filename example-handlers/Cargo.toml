@@ -15,3 +15,4 @@ message-structs.workspace = true
 
 futures.workspace = true
 proc-macro2.workspace = true
+smol.workspace = true

@@ -6,5 +6,6 @@ message_list!{[
     example_messages::Add2,
     example_messages::Times3,
     example_messages::GetExampleInitValue,
+    example_messages::NoResponse,
 ]}
 
