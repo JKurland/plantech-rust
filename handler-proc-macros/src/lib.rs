@@ -1,7 +1,7 @@
 use proc_macro2::{TokenStream, Span, Ident};
 use syn::{parse_macro_input, Generics, DeriveInput, Attribute};
 use quote::quote;
-use proc_macro_helpers::{ParenList, ParenValue, BareList};
+use proc_macro_helpers::{BareList};
 
 fn get_attribute<'a>(attrs: &'a [Attribute], to_find: &str) -> Option<&'a Attribute> {
     for attr in attrs {
