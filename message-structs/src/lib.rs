@@ -6,7 +6,9 @@ pub struct MessageSpec {
 }
 
 pub trait Message {
+    // Response is wrapped in a future if the message is async, UnwrappedResponse is not.
     type Response;
+    type UnwrappedResponse;
 
     fn get_message_spec() -> &'static MessageSpec;
 }

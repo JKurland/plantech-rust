@@ -83,6 +83,18 @@ fn try_define_context_type(ts: TokenStream) -> syn::Result<TokenStream> {
             )
         });
 
+    // check for duplicate names in the handlers
+    let mut handler_names = ::std::collections::HashSet::new();
+    for pair in input.handlers.iter().map(|handlers| &handlers.named_handlers.items).flatten() {
+        if pair.first == "context_proxy_sender" || pair.first == "context_proxy_receiver" {
+            return Err(syn::Error::new_spanned(pair.first.clone(), "Handler name is reserved"));
+        }
+
+        if !handler_names.insert(&pair.first) {
+            return Err(syn::Error::new_spanned(pair.first.clone(), "Duplicate handler name"));
+        }
+    }
+
     Ok(quote!(
         #[proc_macro]
         pub fn context_type(ts: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
@@ -108,7 +120,15 @@ fn try_message_list(ts: TokenStream) -> syn::Result<TokenStream> {
             vec![#( <#message_paths as ::message_structs::Message>::get_message_spec() ),* ]
         }
 
-        pub trait C: #( ::context_structs::CtxHandle<#message_paths> + )* {}
+
+        pub trait C: #( ::context_structs::CtxHandle<#message_paths> + )* {
+            // The normal context is not Send, but the proxy is. This is done using an mpsc
+            // channel.
+            fn proxy(&self) -> ::std::boxed::Box<dyn C + Send>;
+
+            // Stops the main loop of the context. This will exit the program.
+            fn quit(&self);
+        }
     ))
 }
 

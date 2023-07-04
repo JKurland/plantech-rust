@@ -76,6 +76,55 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
     })
 }
 
+fn make_handle_impl_body_for_proxy(message_spec: &MessageSpec) -> TokenStream {
+    let enum_name = any_message_enum_name(message_spec);
+
+    let make_any_message = if message_spec.has_response {
+        quote!(
+            let (sender, receiver) = ::oneshot::channel();
+            let any_message = AnyMessage::#enum_name(message, sender);
+        )
+    } else {
+        quote!(
+            let any_message = AnyMessage::#enum_name(message);
+        )
+    };
+
+    let send_snippet = if message_spec.is_async {
+        quote!(self_sender.send(any_message).await.unwrap();)
+    } else {
+        quote!(self.sender.try_send(any_message).unwrap();)
+    };
+
+    let return_response = if message_spec.has_response {
+        if message_spec.is_async {
+            quote!(receiver.await.unwrap())
+        } else {
+            quote!(receiver.recv().unwrap())
+        }
+    } else {
+        quote!()
+    };
+
+    if message_spec.is_async {
+        quote!(
+            use ::futures::FutureExt;
+            let self_sender = self.sender.clone();
+            async move {
+                #make_any_message
+                #send_snippet
+                #return_response
+            }.boxed()
+        )
+    } else {
+        quote!(
+            #make_any_message
+            #send_snippet
+            #return_response
+        )
+    }
+}
+
 fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Result<TokenStream> {
     // get an iter of handlers which handle this message
     let handlers = handlers.iter().filter(|h| h.handles(message_spec)).collect::<Vec<_>>();
@@ -83,6 +132,7 @@ fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Re
     let message_name: TypePath = parse_str(message_spec.name)?;
     let handle_body = make_handle_impl_body(message_spec, &handlers, false)?;
     let handle_body_with_unwrap = make_handle_impl_body(message_spec, &handlers, true)?;
+    let handle_body_proxy = make_handle_impl_body_for_proxy(message_spec);
 
     Ok(quote!(
         impl ::context_structs::CtxHandle<#message_name> for Context {
@@ -94,6 +144,12 @@ fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Re
         impl ::context_structs::CtxHandle<#message_name> for PartialContext {
             fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
                 #handle_body_with_unwrap
+            }
+        }
+
+        impl ::context_structs::CtxHandle<#message_name> for ContextProxy {
+            fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
+                #handle_body_proxy
             }
         }
     ))
@@ -110,6 +166,59 @@ fn make_context_config(handlers: &[Handler]) -> TokenStream {
     quote!(
         pub struct ContextConfig {
             #(pub #handler_member_names_with_config: <#handler_types_with_config as ::handler_structs::Handler>::InitConfig),*
+        }
+    )
+}
+
+fn any_message_enum_name(spec: &MessageSpec) -> Ident {
+    let name = &spec.name.replace("_", "__").replace("::", "_");
+    let trimmed_name = name.trim_start_matches("_");
+    Ident::new(trimmed_name, Span::call_site())
+}
+
+fn make_any_message_enum(message_specs: &[&'static MessageSpec]) -> TokenStream {
+    let enum_types = message_specs.iter().map(|spec| {
+        let message_type = syn::parse_str::<TypePath>(spec.name).unwrap();
+        if spec.has_response {
+            quote!(#message_type, ::oneshot::Sender<<#message_type as ::message_structs::Message>::UnwrappedResponse>)
+        } else {
+            quote!(#message_type)
+        }
+    });
+
+    let message_idents: Vec<_> = message_specs.iter().map(|s| any_message_enum_name(s)).collect();
+
+    let match_arms = message_specs.iter().zip(&message_idents).map(|(spec, ident)| {
+        let get_response_snippet = if spec.is_async {
+            quote!(ctx.handle(message).await)
+        } else {
+            quote!(ctx.handle(message))
+        };
+
+        if spec.has_response {
+            quote!(Self::#ident(message, sender) => {
+                let response = #get_response_snippet;
+                // ignore the error, it just means the receiver was dropped
+                let _ = sender.send(response);
+            })
+        } else {
+            quote!(Self::#ident(message) => {
+                #get_response_snippet;
+            })
+        }
+    });
+
+    quote!(
+        pub enum AnyMessage {
+            #( #message_idents ( #enum_types ) ),*
+        }
+
+        impl AnyMessage {
+            pub async fn pass_to(self, ctx: &impl ::message_list::C) {
+                match self {
+                    #(#match_arms,)*
+                }
+            }
         }
     )
 }
@@ -175,7 +284,7 @@ pub fn context_impl(message_specs: Vec<&'static MessageSpec>, handler_specs: Vec
             quote!(&())
         } else {
             quote!({
-                type InitCtx<'a, Ctx: ::message_list::C + 'a> = <#handler_type as ::handler_structs::Handler>::InitCtx<'a, Ctx>;
+                type InitCtx<'a, Ctx> = <#handler_type as ::handler_structs::Handler>::InitCtx<'a, Ctx>;
                 &InitCtx{ctx: &partial_context}
             })
         };
@@ -194,30 +303,114 @@ pub fn context_impl(message_specs: Vec<&'static MessageSpec>, handler_specs: Vec
         )
     });
 
+    let any_message_enum = make_any_message_enum(&message_specs);
+
     Ok(quote!(
         #context_config
+        #any_message_enum
 
+        // partial context needs at least the sender so it can give out ContextProxy during init
         #[derive(Default)]
         struct PartialContext {
-            #( #handler_names: ::std::option::Option<#handler_type_names> ),*
+            #( #handler_names: ::std::option::Option<#handler_type_names> ),*,
+            context_proxy_sender: ::std::option::Option<::smol::channel::Sender<AnyMessage>>,
+            context_proxy_receiver: ::std::option::Option<::smol::channel::Receiver<AnyMessage>>,
         }
 
         pub struct Context {
-            #( #handler_names: #handler_type_names ),*
+            #( #handler_names: #handler_type_names ),*,
+            context_proxy_sender: ::smol::channel::Sender<AnyMessage>,
+            context_proxy_receiver: ::smol::channel::Receiver<AnyMessage>,
+        }
+
+        #[derive(Clone)]
+        pub struct ContextProxy {
+            sender: ::smol::channel::Sender<AnyMessage>,
         }
 
         impl Context {
             pub fn new(config: ContextConfig) -> Self {
+                let (context_proxy_sender, context_proxy_receiver) = ::smol::channel::bounded(1024);
                 let mut partial_context = PartialContext::default();
+
+                partial_context.context_proxy_sender = ::std::option::Option::Some(context_proxy_sender);
+                partial_context.context_proxy_receiver = ::std::option::Option::Some(context_proxy_receiver);
+
                 #(#call_inits)*
+
                 Self {
-                    #(#handler_names: partial_context.#handler_names.unwrap()),*
+                    #(#handler_names: partial_context.#handler_names.unwrap()),*,
+                    context_proxy_sender: partial_context.context_proxy_sender.unwrap(),
+                    context_proxy_receiver: partial_context.context_proxy_receiver.unwrap(),
+                }
+            }
+
+            pub async fn run(&self) {
+                let executor = ::smol::LocalExecutor::new();
+
+                loop {
+                    if executor.is_empty() {
+                        // if we have no tasks wait on the receiver
+                        let message = match self.context_proxy_receiver.recv().await {
+                            Ok(message) => message,
+                            Err(_) => {return;},
+                        };
+                        executor.spawn(async move {
+                            message.pass_to(self).await;
+                        }).detach();
+                    } else {
+                        // otherwise check for any new messages without waiting
+                        match self.context_proxy_receiver.try_recv() {
+                            Ok(message) => {
+                                executor.spawn(async move {
+                                    message.pass_to(self).await;
+                                }).detach();
+                            },
+                            Err(::smol::channel::TryRecvError::Empty) => {
+                                if !executor.is_empty() {
+                                    executor.tick().await;
+                                }
+                            },
+                            Err(::smol::channel::TryRecvError::Closed) => {return;},
+                        }
+                    }
                 }
             }
         }
 
-        impl ::message_list::C for Context {}
-        impl ::message_list::C for PartialContext {}
+        impl ::message_list::C for Context {
+            fn proxy(&self) -> ::std::boxed::Box<dyn ::message_list::C + Send> {
+                ::std::boxed::Box::new(ContextProxy {
+                    sender: self.context_proxy_sender.clone(),
+                })
+            }
+
+            fn quit(&self) {
+                self.context_proxy_sender.close();
+            }
+        }
+
+        impl ::message_list::C for PartialContext {
+            fn proxy(&self) -> ::std::boxed::Box<dyn ::message_list::C + Send> {
+                ::std::boxed::Box::new(ContextProxy {
+                    sender: self.context_proxy_sender.clone().unwrap(),
+                })
+            }
+
+            fn quit(&self) {
+                self.context_proxy_sender.as_ref().unwrap().close();
+            }
+        }
+
+        impl ::message_list::C for ContextProxy {
+            fn proxy(&self) -> ::std::boxed::Box<dyn ::message_list::C + Send> {
+                ::std::boxed::Box::new(self.clone())
+            }
+
+            fn quit(&self) {
+                self.sender.close();
+            }
+        }
 
         #handle_impls
     ))
