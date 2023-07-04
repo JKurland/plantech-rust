@@ -4,7 +4,7 @@ use quote::quote;
 
 fn get_attribute<'a>(attrs: &'a [Attribute], to_find: &str) -> Option<&'a Attribute> {
     for attr in attrs {
-        let path = &attr.path;
+        let path = &attr.path();
         if let Some(ident) = path.get_ident() {
             if ident == to_find {
                 return Some(attr);
@@ -29,8 +29,8 @@ fn assert_not_generic(ast: &DeriveInput) {
 }
 
 fn parse_pt_response(attr: &Attribute) -> syn::Result<syn::Type> {
-    let response_type: syn::TypeParen = syn::parse2(attr.tokens.clone())?;
-    Ok(*response_type.elem)
+    let response_type: syn::Type = attr.parse_args()?;
+    Ok(response_type)
 }
 
 fn get_response_type(attrs: &[Attribute]) -> Option<syn::Result<syn::Type>> {

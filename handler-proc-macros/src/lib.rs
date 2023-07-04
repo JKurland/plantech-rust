@@ -1,11 +1,11 @@
 use proc_macro2::{TokenStream, Span, Ident};
 use syn::{parse_macro_input, Generics, DeriveInput, Attribute};
 use quote::quote;
-use proc_macro_helpers::{ParenList, ParenValue};
+use proc_macro_helpers::{ParenList, ParenValue, BareList};
 
 fn get_attribute<'a>(attrs: &'a [Attribute], to_find: &str) -> Option<&'a Attribute> {
     for attr in attrs {
-        let path = &attr.path;
+        let path = &attr.path();
         if let Some(ident) = path.get_ident() {
             if ident == to_find {
                 return Some(attr);
@@ -15,25 +15,25 @@ fn get_attribute<'a>(attrs: &'a [Attribute], to_find: &str) -> Option<&'a Attrib
     return None;
 }
 
-fn get_handled_messages(attrs: &[Attribute]) -> Option<syn::Result<ParenList<syn::Type>>> {
+fn get_handled_messages(attrs: &[Attribute]) -> Option<syn::Result<BareList<syn::Type>>> {
     get_attribute(attrs, "pt_handles").map(|attr| {
-        let handled_messages: ParenList::<syn::Type> = syn::parse2(attr.tokens.clone())?;
+        let handled_messages: BareList::<syn::Type> = attr.parse_args()?;
         Ok(handled_messages)
     })
 }
 
 // pt_init specifies a list of requests that must be supported during init of this handler. Sending
 // other types of messages (e.g. events) is not supported during handler init.
-fn get_init_requests(attrs: &[Attribute]) -> Option<syn::Result<ParenList<syn::Type>>> {
+fn get_init_requests(attrs: &[Attribute]) -> Option<syn::Result<BareList<syn::Type>>> {
     get_attribute(attrs, "pt_init").map(|attr| {
-        let init: ParenList::<syn::Type> = syn::parse2(attr.tokens.clone())?;
+        let init: BareList::<syn::Type> = attr.parse_args()?;
         Ok(init)
     })
 }
 
-fn get_init_config(attrs: &[Attribute]) -> Option<syn::Result<ParenValue<syn::Type>>> {
+fn get_init_config(attrs: &[Attribute]) -> Option<syn::Result<syn::Type>> {
     get_attribute(attrs, "pt_config").map(|attr| {
-        let init_config: ParenValue<syn::Type> = syn::parse2(attr.tokens.clone())?;
+        let init_config: syn::Type = attr.parse_args()?;
         Ok(init_config)
     })
 }
@@ -70,8 +70,7 @@ fn try_handler_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
         .flatten()
         .collect();
 
-    let init_config = invert_option_result(get_init_config(&ast.attrs))?
-        .map(|p| p.value);
+    let init_config = invert_option_result(get_init_config(&ast.attrs))?;
 
     let has_init_config = init_config.is_some();
 

@@ -1,0 +1,42 @@
+[workspace]
+
+members = [
+    "application",
+    "context-impl",
+    "context-proc-macros",
+    "context-structs",
+    "example-handlers",
+    "example-messages",
+    "handler-list",
+    "handler-proc-macros",
+    "handler-structs",
+    "message-list",
+    "message-proc-macros",
+    "message-structs",
+    "proc-macro-helpers",
+]
+
+[workspace.dependencies]
+context-impl = {path = "context-impl"}
+context-proc-macros = {path = "context-proc-macros"}
+context-structs = {path = "context-structs"}
+
+example-handlers = {path = "example-handlers"}
+example-messages = {path = "example-messages"}
+
+handler-list = {path = "handler-list"}
+handler-proc-macros = {path = "handler-proc-macros"}
+handler-structs = {path = "handler-structs"}
+
+message-list = {path = "message-list"}
+message-proc-macros = {path = "message-proc-macros"}
+message-structs = {path = "message-structs"}
+
+proc-macro-helpers = {path = "proc-macro-helpers"}
+
+smol = "*"
+oneshot = "*"
+futures = "*"
+syn = { version = "*", features = ["extra-traits","parsing", "full"] }
+quote = "*"
+proc-macro2 = "*"

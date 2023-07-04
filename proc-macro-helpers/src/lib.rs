@@ -6,6 +6,21 @@ use syn::{parse::Parse, Token, punctuated::Punctuated, bracketed, parenthesized,
 
 // See context-proc-macro for example usage
 
+
+// A list not surrounded by any brackets
+pub struct BareList<ValueT: Parse> {
+    pub values: Punctuated<ValueT, Token![,]>,
+}
+
+impl<ValueT: Parse> Parse for BareList<ValueT> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            values: input.parse_terminated(ValueT::parse, Token![,])?
+        })
+    }
+}
+
+
 // A list surrounded by [] (e.g. [1,2,3,])
 pub struct List<ValueT: Parse> {
     pub bracket_token: syn::token::Bracket,
@@ -17,7 +32,7 @@ impl<ValueT: Parse> Parse for List<ValueT> {
         let content;
         Ok(Self {
             bracket_token: bracketed!(content in input),
-            values: content.parse_terminated(ValueT::parse)?
+            values: content.parse_terminated(ValueT::parse, Token![,])?
         })
     }
 }
@@ -34,7 +49,7 @@ impl<ValueT: Parse> Parse for ParenList<ValueT> {
         let content;
         Ok(Self {
             paren_token: parenthesized!(content in input),
-            values: content.parse_terminated(ValueT::parse)?
+            values: content.parse_terminated(ValueT::parse, Token![,])?
         })
     }
 }
@@ -83,7 +98,7 @@ impl<KeyT: Parse + Eq + Hash + ToTokens, ValueT: Parse> Parse for Dict<KeyT, Val
         let content;
         let rtn = Self {
             brace_token: braced!(content in input),
-            items: content.parse_terminated(Pair::parse)?
+            items: content.parse_terminated(Pair::parse, Token![,])?
         };
 
         // check for duplicate keys in items

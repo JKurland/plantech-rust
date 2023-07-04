@@ -7,7 +7,7 @@ edition = "2021"
 
 
 [dependencies]
-example-messages = {path = "../example-messages"}
-context-proc-macros = {path = "../context-proc-macros"}
-message-structs = {path = "../message-structs"}
-context-structs = {path = "../context-structs"}
+example-messages.workspace = true
+context-proc-macros.workspace = true
+message-structs.workspace = true
+context-structs.workspace = true

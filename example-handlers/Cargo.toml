@@ -6,11 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-example-messages = {path = "../example-messages"}
-handler-proc-macros = {path = "../handler-proc-macros"}
-handler-structs = {path = "../handler-structs"}
-message-structs = {path = "../message-structs"}
-futures = "0.3.27"
-message-list = {path = "../message-list"}
-context-structs = {path = "../context-structs"}
-proc-macro2 = "1.0.49"
+context-structs.workspace = true
+example-messages.workspace = true
+handler-proc-macros.workspace = true
+handler-structs.workspace = true
+message-list.workspace = true
+message-structs.workspace = true
+
+futures.workspace = true
+proc-macro2.workspace = true

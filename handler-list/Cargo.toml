@@ -9,8 +9,8 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-context-proc-macros = {path = "../context-proc-macros"}
-message-list = {path = "../message-list"}
-handler-structs = {path = "../handler-structs"}
-context-impl = {path = "../context-impl"}
-example-handlers = {path = "../example-handlers"}
+context-impl.workspace = true
+context-proc-macros.workspace = true
+example-handlers.workspace = true
+handler-structs.workspace = true
+message-list.workspace = true
