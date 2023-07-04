@@ -19,7 +19,7 @@ fn has_attribute(attrs: &[Attribute], to_find: &str) -> bool {
 }
 
 fn is_async(attrs: &[Attribute]) -> bool {
-    has_attribute(attrs, "pt_async")
+    !has_attribute(attrs, "pt_sync")
 }
 
 fn assert_not_generic(ast: &DeriveInput) {
@@ -71,7 +71,7 @@ fn try_message_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
 }
 
 
-#[proc_macro_derive(Message, attributes(pt_async, pt_response))]
+#[proc_macro_derive(Message, attributes(pt_sync, pt_response))]
 pub fn message_macro(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = parse_macro_input!(item as DeriveInput);
     
