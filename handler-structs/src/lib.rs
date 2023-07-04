@@ -32,5 +32,5 @@ pub mod hidden {
 }
 
 pub trait Handle<T: Message>: hidden::DeclaredHandle<T> {
-    fn handle(&self, ctx: &impl C, message: T) -> T::Response;
+    fn handle<'a>(&'a self, ctx: &'a impl C, message: T) -> T::Response<'a>;
 }

@@ -48,14 +48,14 @@ fn try_message_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
     };
 
     let wrapped_response_type = if is_async {
-        quote!{::futures::future::BoxFuture<'static, #response_type>}
+        quote!{::futures::future::BoxFuture<'a, #response_type>}
     } else {
         response_type.clone()
     };
 
     Ok(quote!(
         impl ::message_structs::Message for #ident {
-            type Response = #wrapped_response_type;
+            type Response<'a> = #wrapped_response_type;
             type UnwrappedResponse = #response_type;
 
             fn get_message_spec() -> &'static ::message_structs::MessageSpec {

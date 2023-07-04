@@ -27,7 +27,7 @@ pub struct Add2 {
 pub struct GetExampleInitValue {}
 
 
-#[derive(Message)]
+#[derive(Clone, Message)]
 pub struct NoResponse {
     pub x: i32
 }

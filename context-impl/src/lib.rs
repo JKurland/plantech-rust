@@ -53,7 +53,17 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
         (false, handlers) => {
             let handler_types = handlers.iter().map(|h| &h.type_name);
             let handler_exprs = handlers.iter().map(|h| get_member_expr(h));
-            quote!(#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message) )*)
+            if message_spec.is_async {
+                quote!(
+                    use futures::FutureExt;
+                    let message = message.clone();
+                    async move {
+                        #( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone()).await; )*
+                    }.boxed()
+                )
+            } else {
+                quote!(#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone()); )*)
+            }
         },
         (true, [handler]) => {
             let handler_type = &handler.type_name;
@@ -85,7 +95,7 @@ fn make_handle_impl_body_for_proxy(message_spec: &MessageSpec) -> TokenStream {
     );
 
     let send_snippet = if message_spec.is_async {
-        quote!(self_sender.send(any_message).await.unwrap();)
+        quote!(self.sender.send(any_message).await.unwrap();)
     } else {
         quote!(self.sender.try_send(any_message).unwrap();)
     };
@@ -99,7 +109,6 @@ fn make_handle_impl_body_for_proxy(message_spec: &MessageSpec) -> TokenStream {
     if message_spec.is_async {
         quote!(
             use ::futures::FutureExt;
-            let self_sender = self.sender.clone();
             async move {
                 #make_any_message
                 #send_snippet
@@ -126,19 +135,19 @@ fn make_handle_impl(message_spec: &MessageSpec, handlers: &[Handler]) -> syn::Re
 
     Ok(quote!(
         impl ::context_structs::CtxHandle<#message_name> for Context {
-            fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
+            fn handle<'a>(&'a self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response<'a> {
                 #handle_body
             }
         }
 
         impl ::context_structs::CtxHandle<#message_name> for PartialContext {
-            fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
+            fn handle<'a>(&'a self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response<'a> {
                 #handle_body_with_unwrap
             }
         }
 
         impl ::context_structs::CtxHandle<#message_name> for ContextProxy {
-            fn handle(&self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response {
+            fn handle<'a>(&'a self, message: #message_name) -> <#message_name as ::message_structs::Message>::Response<'a> {
                 #handle_body_proxy
             }
         }

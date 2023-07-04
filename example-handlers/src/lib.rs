@@ -9,12 +9,21 @@ use context_structs::CtxHandle;
 
 
 #[derive(Handler)]
-#[pt_handles(GetExampleInitValue)]
+#[pt_handles(GetExampleInitValue, NoResponse)]
 pub struct SomeInitHandler {}
 
 impl Handle<GetExampleInitValue> for SomeInitHandler {
-    fn handle(&self, _ctx: &impl C, _message: GetExampleInitValue) -> <GetExampleInitValue as message_structs::Message>::Response {
+    fn handle<'a>(&'a self, _ctx: &'a impl C, _message: GetExampleInitValue) -> <GetExampleInitValue as message_structs::Message>::Response<'a> {
         42
+    }
+}
+
+impl Handle<NoResponse> for SomeInitHandler {
+    fn handle<'a>(&'a self, _ctx: &'a impl C, message: NoResponse) -> <NoResponse as message_structs::Message>::Response<'a> {
+        async move {
+            smol::Timer::after(Duration::from_secs(2)).await;
+            println!("SomeInitHandler NoResponse handler got message: {:?}", message.x);
+        }.boxed()
     }
 }
 
@@ -46,19 +55,19 @@ impl HandlerInit for ArithmeticHandler {
 
 
 impl Handle<Add1> for ArithmeticHandler {
-    fn handle(&self, _ctx: &impl C, message: Add1) -> <Add1 as message_structs::Message>::Response {
+    fn handle<'a>(&'a self, _ctx: &impl C, message: Add1) -> <Add1 as message_structs::Message>::Response<'a> {
         message.x + 1
     }
 }
 
 impl Handle<Times3> for ArithmeticHandler {
-    fn handle(&self, _ctx: &impl C, message: Times3) -> <Times3 as message_structs::Message>::Response {
+    fn handle<'a>(&'a self, _ctx: &'a impl C, message: Times3) -> <Times3 as message_structs::Message>::Response<'a> {
         async move {message.x * 3}.boxed()
     }
 }
 
 impl Handle<Add2> for ArithmeticHandler {
-    fn handle(&self, ctx: &impl C, message: Add2) -> <Add2 as message_structs::Message>::Response {
+    fn handle<'a>(&'a self, ctx: &'a impl C, message: Add2) -> <Add2 as message_structs::Message>::Response<'a> {
         let add1 = ctx.handle(Add1{ x: message.x });
         let add2 = ctx.handle(Add1{ x: add1 });
         add2
@@ -66,7 +75,7 @@ impl Handle<Add2> for ArithmeticHandler {
 }
 
 impl Handle<NoResponse> for ArithmeticHandler {
-    fn handle(&self, _ctx: &impl C, message: NoResponse) -> <NoResponse as message_structs::Message>::Response {
+    fn handle<'a>(&'a self, _ctx: &'a impl C, message: NoResponse) -> <NoResponse as message_structs::Message>::Response<'a> {
         async move {
             smol::Timer::after(Duration::from_secs(2)).await;
             println!("NoResponse handler got message: {:?}", message.x);

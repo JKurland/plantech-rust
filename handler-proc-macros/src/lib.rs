@@ -89,7 +89,7 @@ fn try_handler_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
             // implement Handle for each init request
             #(
                 impl<'a, Ctx> ::context_structs::CtxHandle<#init_requests> for InitCtx<'a, Ctx> where Ctx: C, Ctx: 'a {
-                    fn handle(&self, message: #init_requests) -> <#init_requests as ::message_structs::Message>::Response {
+                    fn handle<'b>(&'b self, message: #init_requests) -> <#init_requests as ::message_structs::Message>::Response<'b> {
                         self.ctx.handle(message)
                     }
                 }
