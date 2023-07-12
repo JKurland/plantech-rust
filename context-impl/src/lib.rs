@@ -55,10 +55,10 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
             let handler_exprs = handlers.iter().map(|h| get_member_expr(h));
             if message_spec.is_async {
                 quote!(
-                    use futures::FutureExt;
+                    use ::futures::FutureExt;
                     let message = message.clone();
                     async move {
-                        #( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone()).await; )*
+                        ::futures::future::join_all([#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone())),*]).await;
                     }.boxed()
                 )
             } else {
