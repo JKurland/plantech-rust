@@ -50,6 +50,17 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
 
     let message_name: TypePath = parse_str(message_spec.name)?;
     Ok(match (message_spec.has_response, handlers) {
+        (false, []) => {
+            if message_spec.is_async {
+                quote!(
+                    use ::futures::FutureExt;
+                    async move {
+                    }.boxed_local()
+                )
+            } else {
+                quote!(())
+            }
+        },
         (false, handlers) => {
             let handler_types = handlers.iter().map(|h| &h.type_name);
             let handler_exprs = handlers.iter().map(|h| get_member_expr(h));
@@ -59,7 +70,7 @@ fn make_handle_impl_body(message_spec: &MessageSpec, handlers: &[&Handler], unwr
                     let message = message.clone();
                     async move {
                         ::futures::future::join_all([#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone())),*]).await;
-                    }.boxed()
+                    }.boxed_local()
                 )
             } else {
                 quote!(#( < #handler_types as ::handler_structs::Handle::<#message_name> >::handle(&#handler_exprs, self, message.clone()); )*)

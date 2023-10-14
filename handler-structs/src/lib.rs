@@ -19,6 +19,7 @@ pub trait Handler {
 }
 
 pub trait HandlerInit: Handler {
+    // Note that you cannot get a context proxy out of InitCtx, since not all handlers are initialised.
     fn init<'a, Ctx: C + 'a>(ctx: &Self::InitCtx<'a, Ctx>, config: Self::InitConfig) -> Self;
 }
 

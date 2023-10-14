@@ -14,3 +14,4 @@ context-proc-macros.workspace = true
 example-handlers.workspace = true
 handler-structs.workspace = true
 message-list.workspace = true
+application.workspace = true

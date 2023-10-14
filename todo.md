@@ -1,0 +1,1 @@
+* Allow messages to be marked as not available during init. For example, since messages can't be sent during init the program cannot respond to user input. So any requests which rely on user input to be fulfilled shouldn't be allowed during init.

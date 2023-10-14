@@ -83,6 +83,7 @@ fn try_handler_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
     let impl_init_ctx_struct_snippet = if init_requests.len() > 0 {
         quote!(
             pub struct InitCtx<'a, Ctx> where Ctx: C, Ctx: 'a {
+                // TODO make this private
                 pub ctx: &'a Ctx,
             }
     

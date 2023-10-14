@@ -1,22 +1,22 @@
 [package]
-name = "application"
+name = "main"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-application-messages.workspace = true
-
 context-structs.workspace = true
+example-handlers.workspace = true
 example-messages.workspace = true
-handler-proc-macros.workspace = true
+handler-list.workspace = true
 handler-structs.workspace = true
 message-list.workspace = true
-message-proc-macros.workspace = true
 message-structs.workspace = true
 
+application.workspace = true
+application-messages.workspace = true
+
 futures.workspace = true
-proc-macro2.workspace = true
+oneshot.workspace = true
 smol.workspace = true
-winit.workspace = true

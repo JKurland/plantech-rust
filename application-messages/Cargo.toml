@@ -1,14 +1,13 @@
 [package]
-name = "message-list"
+name = "application-messages"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-
 [dependencies]
-example-messages.workspace = true
-context-proc-macros.workspace = true
+message-proc-macros.workspace = true
 message-structs.workspace = true
-context-structs.workspace = true
-application-messages.workspace = true
+
+futures.workspace = true
+winit.workspace = true

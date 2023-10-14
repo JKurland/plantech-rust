@@ -2,6 +2,7 @@
 
 members = [
     "application",
+    "application-messages",
     "context-impl",
     "context-proc-macros",
     "context-structs",
@@ -10,6 +11,7 @@ members = [
     "handler-list",
     "handler-proc-macros",
     "handler-structs",
+    "main",
     "message-list",
     "message-proc-macros",
     "message-structs",
@@ -17,6 +19,9 @@ members = [
 ]
 
 [workspace.dependencies]
+application = {path = "application"}
+application-messages = {path = "application-messages"}
+
 context-impl = {path = "context-impl"}
 context-proc-macros = {path = "context-proc-macros"}
 context-structs = {path = "context-structs"}
@@ -40,3 +45,4 @@ futures = "*"
 syn = { version = "*", features = ["extra-traits","parsing", "full"] }
 quote = "*"
 proc-macro2 = "*"
+winit = "*"

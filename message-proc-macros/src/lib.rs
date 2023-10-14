@@ -48,7 +48,7 @@ fn try_message_macro(ast: DeriveInput) -> syn::Result<TokenStream> {
     };
 
     let wrapped_response_type = if is_async {
-        quote!{::futures::future::BoxFuture<'a, #response_type>}
+        quote!{::futures::future::LocalBoxFuture<'a, #response_type>}
     } else {
         response_type.clone()
     };
